@@ -5,5 +5,11 @@
       "src": "api/ask.js",
       "use": "@vercel/node"
     }
+  ],
+  "routes": [
+    {
+      "src": "/api/ask",
+      "dest": "api/ask.js"
+    }
   ]
 }
