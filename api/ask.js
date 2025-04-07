@@ -1,34 +1,48 @@
-// api/ask.js
+// File: api/ask.js
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Only POST requests allowed' });
   }
 
-  const { message } = req.body;
+  const userMessage = req.body.message;
 
-  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      model: "openchat/openchat-7b",
-      messages: [
-        {
-          role: "system",
-          content: "You are a smart, elegant, and educational NPC that only uses emojis when appropriate."
-        },
-        {
-          role: "user",
-          content: message
-        }
-      ]
-    })
-  });
+  if (!userMessage) {
+    return res.status(400).json({ error: 'Missing message in request body' });
+  }
 
-  const data = await response.json();
-  const botMessage = data.choices?.[0]?.message?.content || "Maaf, aku belum bisa jawab itu.";
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  const model = process.env.AI_MODEL || 'gryphe/mythomist-7b'; // default gratisan, no skripsi
 
-  res.status(200).json({ message: botMessage });
+  try {
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://island-npc-chatbot-v2.vercel.app/', // ubah ke domain kamu
+        'X-Title': 'Island NPC Chatbot'
+      },
+      body: JSON.stringify({
+        model: model,
+        messages: [
+          {
+            role: 'system',
+            content: "Kamu adalah NPC cerdas dan elegan di sebuah pulau tropis. Jawabanmu edukatif, tidak terlalu panjang, tidak terlalu humoris, dan gunakan emoji hanya saat cocok."
+          },
+          {
+            role: 'user',
+            content: userMessage
+          }
+        ]
+      })
+    });
+
+    const data = await response.json();
+
+    const reply = data.choices?.[0]?.message?.content || "Maaf, saya belum bisa jawab itu.";
+    res.status(200).json({ message: reply });
+  } catch (error) {
+    console.error('Chatbot error:', error);
+    res.status(500).json({ error: 'Something went wrong with the chatbot.' });
+  }
 }
