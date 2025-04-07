@@ -1,48 +1,49 @@
-// File: api/ask.js
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Only POST requests allowed' });
+    return res.status(405).json({ message: 'Method not allowed' });
   }
 
-  const userMessage = req.body.message;
-
-  if (!userMessage) {
-    return res.status(400).json({ error: 'Missing message in request body' });
+  const { message } = req.body;
+  if (!message) {
+    return res.status(400).json({ message: 'No message provided' });
   }
 
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  const model = process.env.AI_MODEL || 'gryphe/mythomist-7b'; // default gratisan, no skripsi
+  const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+  const AI_MODEL = process.env.AI_MODEL || 'gryphe/mythomist-7b'; // Default model kalau belum di-set
 
   try {
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://island-npc-chatbot-v2.vercel.app/', // ubah ke domain kamu
-        'X-Title': 'Island NPC Chatbot'
       },
       body: JSON.stringify({
-        model: model,
+        model: AI_MODEL,
         messages: [
           {
             role: 'system',
-            content: "Kamu adalah NPC cerdas dan elegan di sebuah pulau tropis. Jawabanmu edukatif, tidak terlalu panjang, tidak terlalu humoris, dan gunakan emoji hanya saat cocok."
+            content:
+              'Kamu adalah NPC pintar, elegan, edukatif, dan hanya menggunakan emoji saat cocok. Jawaban harus pendek, padat, dan tidak seperti novel.',
           },
           {
             role: 'user',
-            content: userMessage
-          }
-        ]
-      })
+            content: message,
+          },
+        ],
+      }),
     });
 
     const data = await response.json();
 
-    const reply = data.choices?.[0]?.message?.content || "Maaf, saya belum bisa jawab itu.";
-    res.status(200).json({ message: reply });
+    if (data?.choices?.[0]?.message?.content) {
+      res.status(200).json({ message: data.choices[0].message.content });
+    } else {
+      console.error('OpenRouter response:', data);
+      res.status(200).json({ message: "Maaf, saya belum bisa menjawab itu." });
+    }
   } catch (error) {
-    console.error('Chatbot error:', error);
-    res.status(500).json({ error: 'Something went wrong with the chatbot.' });
+    console.error('Fetch error:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
   }
 }
