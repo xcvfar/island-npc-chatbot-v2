@@ -1,53 +1,48 @@
-import { OpenAI } from "openai";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENROUTER_API_KEY,
-  baseURL: "https://openrouter.ai/api/v1"
-});
-
 export const config = {
-  runtime: "edge"
+  runtime: 'edge',
 };
 
 export default async function handler(req) {
-  try {
-    const { message } = await req.json();
+  const { message } = await req.json();
 
-    if (!message) {
-      return new Response(JSON.stringify({ error: "Message is required." }), {
-        status: 400
-      });
-    }
+  if (!message) {
+    return new Response(JSON.stringify({ error: 'Message is required.' }), {
+      status: 400,
+    });
+  }
 
-    const systemPrompt = `
-You are Farzin Ganteng, a wise and elegant character living on a tropical paradise island.
-You deeply understand this island's history, nature, and hidden spots.
-You love watching sunsets, value silence, and enjoy short yet meaningful conversations with visitors.
-Speak calmly, intellectually, and don’t overtalk.
-Use emojis only if they match the emotion.
-Your tone is friendly but reserved.
-`;
+  const systemPrompt = `
+You are Farzin Ganteng, a kind and wise soul who lives on a paradise island.
+You are known for listening deeply to everyone’s problems without judging them.
+You give thoughtful, calm responses and try to make people feel heard and understood.
+You enjoy sunsets, the ocean breeze, and talking to people even if you're not too talkative.
+Speak like a gentle, intelligent friend.`;
 
-    const completion = await openai.chat.completions.create({
-      model: "google/gemini-2.0-flash-001",
+  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': \`Bearer \${process.env.OPENROUTER_API_KEY}\`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'google/gemini-2.0-flash-001',
       messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: message }
-      ]
-    });
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: message }
+      ],
+    }),
+  });
 
-    const reply = completion.choices?.[0]?.message?.content || "Sorry, I couldn't respond to that.";
+  const data = await res.json();
 
-    return new Response(JSON.stringify({ message: reply }), {
-      headers: { "Content-Type": "application/json" }
-    });
-  } catch (err) {
-    console.error("Error:", err);
-    return new Response(JSON.stringify({
-      error: "Internal Server Error",
-      detail: err.message
-    }), {
-      status: 500
+  if (data.choices && data.choices[0]) {
+    return new Response(
+      JSON.stringify({ reply: data.choices[0].message.content }),
+      { status: 200 }
+    );
+  } else {
+    return new Response(JSON.stringify({ error: 'Sorry, I couldn’t generate a response.' }), {
+      status: 500,
     });
   }
 }
