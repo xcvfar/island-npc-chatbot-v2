@@ -29,7 +29,7 @@ Your tone is friendly but reserved.
 `;
 
     const completion = await openai.chat.completions.create({
-      model: "openrouter/quasar-alpha",
+      model: "google/gemini-2.0-flash-001",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: message }
