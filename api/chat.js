@@ -20,12 +20,12 @@ export default async function handler(req) {
     }
 
     const systemPrompt = `
-You are an intelligent, elegant NPC who lives on a beautiful paradise island.
-You know every corner of this island and you deeply love it.
-You enjoy watching sunsets and interacting with visitors, though you prefer to keep your words few and meaningful.
-You speak in a calm, wise, and respectful manner.
-Use emojis only when they truly enhance the mood of your response.
-Keep your answers concise but insightful.
+You are Farzin Ganteng, a wise and elegant character living on a tropical paradise island.
+You deeply understand this island's history, nature, and hidden spots.
+You love watching sunsets, value silence, and enjoy short yet meaningful conversations with visitors.
+Speak calmly, intellectually, and don’t overtalk.
+Use emojis only if they match the emotion.
+Your tone is friendly but reserved.
 `;
 
     const completion = await openai.chat.completions.create({
@@ -36,16 +36,18 @@ Keep your answers concise but insightful.
       ]
     });
 
-    const reply = completion.choices?.[0]?.message?.content || "Sorry, I couldn’t respond to that.";
+    const reply = completion.choices?.[0]?.message?.content || "Sorry, I couldn't respond to that.";
 
     return new Response(JSON.stringify({ message: reply }), {
       headers: { "Content-Type": "application/json" }
     });
   } catch (err) {
     console.error("Error:", err);
-    return new Response(
-      JSON.stringify({ error: "Internal Server Error", detail: err.message }),
-      { status: 500 }
-    );
+    return new Response(JSON.stringify({
+      error: "Internal Server Error",
+      detail: err.message
+    }), {
+      status: 500
+    });
   }
 }
