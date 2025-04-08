@@ -1,7 +1,7 @@
 export default async function handler(req, res) {
   const { message } = req.body;
 
-  const model = "mistralai/Mistral-7B-Instruct-v0.3";
+  const model = "mistralai/Mistral-7B-Instruct";
 
   console.log("=== INCOMING REQUEST ===");
   console.log("Body:", req.body);
