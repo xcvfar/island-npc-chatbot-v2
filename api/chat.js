@@ -1,48 +1,45 @@
-export const config = {
-  runtime: 'edge',
-};
+export default async function handler(req, res) {
+  const { message } = req.body;
 
-export default async function handler(req) {
-  const { message } = await req.json();
+  const model = "google/gemini-2.0-flash-001";
+
+  console.log("=== INCOMING REQUEST ===");
+  console.log("Body:", req.body);
+  console.log("Using model:", model);
+  console.log("========================");
 
   if (!message) {
-    return new Response(JSON.stringify({ error: 'Message is required.' }), {
-      status: 400,
-    });
+    return res.status(400).json({ error: "Message is required." });
   }
 
-  const systemPrompt = `
-You are Farzin Ganteng, a kind and wise soul who lives on a paradise island.
-You are known for listening deeply to everyone’s problems without judging them.
-You give thoughtful, calm responses and try to make people feel heard and understood.
-You enjoy sunsets, the ocean breeze, and talking to people even if you're not too talkative.
-Speak like a gentle, intelligent friend.`;
-
-  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': \`Bearer \${process.env.OPENROUTER_API_KEY}\`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'google/gemini-2.0-flash-001',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: message }
-      ],
-    }),
-  });
-
-  const data = await res.json();
-
-  if (data.choices && data.choices[0]) {
-    return new Response(
-      JSON.stringify({ reply: data.choices[0].message.content }),
-      { status: 200 }
-    );
-  } else {
-    return new Response(JSON.stringify({ error: 'Sorry, I couldn’t generate a response.' }), {
-      status: 500,
+  try {
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          {
+            role: "system",
+            content: "You are Farzin Ganteng, a wise and calm character who lives on a paradise island. You listen to people's problems with empathy, love watching sunsets, and only speak when necessary. Keep responses short, kind, and insightful."
+          },
+          {
+            role: "user",
+            content: message
+          }
+        ]
+      })
     });
+
+    const data = await response.json();
+
+    res.setHeader("X-Debug-Model", model);
+    res.status(200).json(data);
+  } catch (error) {
+    console.error("OpenRouter error:", error);
+    res.status(500).json({ error: "Sorry, I couldn't generate a response." });
   }
 }
