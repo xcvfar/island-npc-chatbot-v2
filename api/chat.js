@@ -1,39 +1,51 @@
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+import { OpenAI } from "openai";
 
-  const { message } = req.body;
-  if (!message) {
-    return res.status(400).json({ error: 'Message is required.' });
-  }
+const openai = new OpenAI({
+  apiKey: process.env.OPENROUTER_API_KEY,
+  baseURL: "https://openrouter.ai/api/v1"
+});
 
+export const config = {
+  runtime: "edge"
+};
+
+export default async function handler(req) {
   try {
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'openrouter/quasar-alpha',
-        messages: [
-          { role: 'system', content: 'You are a helpful, elegant, educational NPC assistant. Be clear and concise.' },
-          { role: 'user', content: message }
-        ]
-      })
+    const { message } = await req.json();
+
+    if (!message) {
+      return new Response(JSON.stringify({ error: "Message is required." }), {
+        status: 400
+      });
+    }
+
+    const systemPrompt = `
+You are an intelligent, elegant NPC who lives on a beautiful paradise island.
+You know every corner of this island and you deeply love it.
+You enjoy watching sunsets and interacting with visitors, though you prefer to keep your words few and meaningful.
+You speak in a calm, wise, and respectful manner.
+Use emojis only when they truly enhance the mood of your response.
+Keep your answers concise but insightful.
+`;
+
+    const completion = await openai.chat.completions.create({
+      model: "openrouter/quasar-alpha",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: message }
+      ]
     });
 
-    const data = await response.json();
+    const reply = completion.choices?.[0]?.message?.content || "Sorry, I couldn’t respond to that.";
 
-    if (data.choices && data.choices.length > 0) {
-      return res.status(200).json({ message: data.choices[0].message.content });
-    } else {
-      console.error('Response error:', data);
-      return res.status(500).json({ message: "Sorry, I couldn't generate a response." });
-    }
-  } catch (error) {
-    console.error('Fetch error:', error);
-    return res.status(500).json({ error: 'Internal server error.' });
+    return new Response(JSON.stringify({ message: reply }), {
+      headers: { "Content-Type": "application/json" }
+    });
+  } catch (err) {
+    console.error("Error:", err);
+    return new Response(
+      JSON.stringify({ error: "Internal Server Error", detail: err.message }),
+      { status: 500 }
+    );
   }
 }
