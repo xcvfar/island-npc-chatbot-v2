@@ -1,7 +1,7 @@
 export default async function handler(req, res) {
   const { message } = req.body;
 
-  const model = "google/gemini-2.0-flash-001";
+  const model = "google/gemini-2.5-pro-exp-0325";
 
   console.log("=== INCOMING REQUEST ===");
   console.log("Body:", req.body);
