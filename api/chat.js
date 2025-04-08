@@ -1,7 +1,7 @@
 export default async function handler(req, res) {
   const { message } = req.body;
 
-  const model = "google/gemini-2.5-pro-exp-0325";
+  const model = "mistralai/Mistral-7B-Instruct-v0.3";
 
   console.log("=== INCOMING REQUEST ===");
   console.log("Body:", req.body);
