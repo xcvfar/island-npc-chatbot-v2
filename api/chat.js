@@ -1,14 +1,21 @@
-import express from 'express';
-const router = express.Router();
+export default async function handler(req, res) {
+  console.log("[DEBUG] Incoming request to /api/chat");
 
-router.post('/', async (req, res) => {
-  const { message } = req.body;
-
-  if (!message) {
-    return res.status(400).json({ error: 'No message provided' });
+  if (req.method !== "POST") {
+    console.warn("[WARN] Method not allowed:", req.method);
+    return res.status(405).json({ error: "Only POST requests allowed." });
   }
 
   try {
+    const body = req.body;
+    console.log("[DEBUG] Request body:", body);
+
+    const userMessage = body?.message;
+    if (!userMessage) {
+      console.error("[ERROR] No message found in request body.");
+      return res.status(400).json({ error: "Message is required." });
+    }
+
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -16,32 +23,29 @@ router.post('/', async (req, res) => {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: process.env.OPENROUTER_MODEL || "mistral/mistral-7b-instruct",
+        model: "google/gemini-2.5-pro-exp-03-25:free",
         messages: [
-          {
-            role: "system",
-            content: "You are a smart, elegant NPC who lives on an island. Respond in a natural and educational tone with minimal humor."
-          },
-          {
-            role: "user",
-            content: message
-          }
+          { role: "system", content: "You are an elegant, educational assistant NPC. Respond clearly, professionally, and concisely." },
+          { role: "user", content: userMessage }
         ]
       })
     });
 
-    const data = await response.json();
+    const result = await response.json();
+    console.log("[DEBUG] OpenRouter API raw response:", result);
 
-    if (data?.choices?.[0]?.message?.content) {
-      res.json({ reply: data.choices[0].message.content });
-    } else {
-      console.warn("Fallback triggered. Response data:", data);
-      res.json({ reply: "Maaf, aku belum bisa menjawab itu sekarang." });
+    if (!response.ok) {
+      console.error("[ERROR] OpenRouter API failed:", result);
+      return res.status(response.status).json({ error: result.error || "AI request failed." });
     }
-  } catch (error) {
-    console.error("Chatbot error:", error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
 
-export default router;
+    const reply = result.choices?.[0]?.message?.content || "Sorry, I couldn't generate a response.";
+    console.log("[DEBUG] Final AI reply:", reply);
+
+    res.status(200).json({ reply });
+
+  } catch (err) {
+    console.error("[FATAL] Unexpected server error:", err);
+    res.status(500).json({ error: "Internal server error." });
+  }
+}
