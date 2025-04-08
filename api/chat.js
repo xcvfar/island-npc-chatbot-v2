@@ -1,7 +1,7 @@
 export default async function handler(req, res) {
   const { message } = req.body;
 
-  const model = "google/gemini-2.5-pro-exp-0325-free"; // Confirmed model name with hyphens
+  const model = "google/gemini-2.5-pro-exp-0325"; // Confirmed model name with hyphens
 
   console.log("=== INCOMING REQUEST ===");
   console.log("Body:", req.body);
