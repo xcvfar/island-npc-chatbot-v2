@@ -1,0 +1,14 @@
+{
+  "name": "island-npc-chatbot-v3",
+  "version": "1.0.0",
+  "description": "AI NPC backend using llama-3.3-70b-versatile on OpenRouter",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "vercel build",
+    "start": "vercel start"
+  },
+  "type": "module",
+  "dependencies": {
+    "node-fetch": "^3.3.2"
+  }
+}
