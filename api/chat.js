@@ -1,59 +1,30 @@
 export default async function handler(req, res) {
-  // CORS headers
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-
-  // Handle preflight request
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { message } = req.body;
-  const GROQ_API_KEY = "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";
+  const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+  const userMessage = req.body.message;
 
-  if (!GROQ_API_KEY) {
-    return res.status(500).json({ error: "GROQ API key is not configured." });
-  }
-
-  if (!message) {
-    return res.status(400).json({ error: "Message is required." });
+  if (!GEMINI_API_KEY) {
+    return res.status(500).json({ error: 'API key not found' });
   }
 
   try {
-    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${GROQ_API_KEY}`,
-        "Content-Type": "application/json",
-      },
+    const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: "llama3-70b-8192",
-        messages: [
-          {
-            role: "system",
-            content: "You are Farzin Ganteng, a calm NPC who lives on a beautiful island. Be wise, minimal, and empathetic.",
-          },
-          {
-            role: "user",
-            content: message,
-          },
-        ],
-      }),
+        contents: [{ parts: [{ text: userMessage }] }]
+      })
     });
 
-    const data = await response.json();
+    const data = await geminiRes.json();
+    const botReply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "Maaf, aku belum ngerti maksudnya.";
 
-    if (!response.ok) {
-      console.error("Groq API error:", data);
-      return res.status(response.status).json({ error: data });
-    }
-
-    const botMessage = data.choices?.[0]?.message?.content || "Sorry, I don't know how to respond to that.";
-    return res.status(200).json({ message: botMessage });
-
-  } catch (error) {
-    console.error("Fetch error:", error);
-    return res.status(500).json({ error: "Internal Server Error" });
+    res.status(200).json({ reply: botReply });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ reply: 'Waduh, error gan.' });
   }
 }
