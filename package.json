@@ -1,8 +1,5 @@
 {
-  "name": "island-npc-chatbot-gemini",
+  "name": "gemini-backend",
   "version": "1.0.0",
-  "type": "module",
-  "dependencies": {
-    "node-fetch": "^3.3.2"
-  }
+  "type": "module"
 }
